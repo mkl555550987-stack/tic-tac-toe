@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tic-Tac-Toe Boss Battles</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            overflow: hidden;
+            touch-action: manipulation;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a0f07;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .game-viewport {
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 0.5rem;
+            box-sizing: border-box;
+            background: radial-gradient(circle, #3d2314 0%, #1a0f07 100%);
+            position: relative;
+        }
+
+        .wood-panel {
+            background: linear-gradient(135deg, #8b5a2b 0%, #5c3a1e 50%, #3d2314 100%);
+            border: 3px solid #28170c;
+            box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.7), 0 4px 8px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+        }
+
+        .wood-card {
+            background: linear-gradient(180deg, #a06b3a 0%, #784c24 100%);
+            border: 2px solid #3d2314;
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 3px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .board-wrapper {
+            position: relative;
+            width: 100%;
+            max-height: 38vh;
+            aspect-ratio: 1 / 1;
+            margin: auto;
+        }
+
+        .board-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            height: 100%;
+            padding: 8px;
+            background: #2b180d;
+            border-radius: 12px;
+            border: 4px solid #1a0f07;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        .cell {
+            background: linear-gradient(145deg, #b8834c, #8c5828);
+            border: 3px solid #3a2211;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: min(12vw, 3.2rem);
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: inset 0 3px 5px rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.4);
+            transition: transform 0.1s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cell:active {
+            transform: scale(0.95);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+        }
+
+        #win-line-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hp-bar-bg {
+            background-color: #2b180d;
+            border: 1px solid #5c3a1e;
+            border-radius: 999px;
+            overflow: hidden;
+            height: 10px;
+        }
+
+        .hp-bar-fill {
+            height: 100%;
+            transition: width 0.3s ease-in-out;
+        }
+
+        .mark-x {
+            color: #dc2626;
+            text-shadow: 2px 2px 0px #7f1d1d, -1px -1px 0px #fca5a5, 0 0 10px rgba(220, 38, 38, 0.6);
+        }
+
+        .mark-o {
+            color: #111827;
+            text-shadow: 1px 1px 0px #4b5563, -1px -1px 0px #000000, 0 0 8px rgba(0, 0, 0, 0.8);
+        }
+
+        .overlay-screen {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 8, 4, 0.95);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .coin-badge {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #d97706;
+            border-radius: 6px;
+            padding: 2px 6px;
+        }
+    </style>
+</head>
+<body class="text-amber-100">
+    <div class="game-viewport">
+        <!-- Start / Login Menu Screen -->
+        <div id="start-screen" class="overlay-screen">
+            <div class="wood-panel p-6 w-full max-w-sm text-center flex flex-col items-center shadow-2xl">
+                <i class="fa-solid fa-crown text-amber-400 text-5xl mb-3 animate-bounce"></i>
+                <h1 class="text-2xl font-black text-amber-200 uppercase tracking-widest mb-1">Tic-Tac-Toe</h1>
+                <p class="text-xs text-amber-400 font-semibold uppercase tracking-wider mb-6">Boss Battle RPG</p>
+
+                <div class="w-full space-y-3">
+                    <button id="btn-start" onclick="handleStartGame(false)" class="wood-card w-full py-3 rounded-lg text-amber-100 font-bold hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play"></i> Start Game
+                    </button>
+                    <button id="btn-new" onclick="handleStartGame(true)" class="wood-card w-full py-3 rounded-lg text-amber-100 font-bold hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> New Game
+                    </button>
+                    <button onclick="openSettings()" class="wood-card w-full py-3 rounded-lg text-amber-100 font-bold hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-gear"></i> Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Selector Screen -->
+        <div id="level-screen" class="overlay-screen hidden">
+            <div class="wood-panel p-6 w-full max-w-sm text-center flex flex-col items-center shadow-2xl">
+                <h2 class="text-xl font-black text-amber-200 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-map"></i> Select Level
+                </h2>
+                <div class="w-full space-y-3 my-2" id="level-buttons-container"></div>
+                <button onclick="openMenu()" class="wood-card w-full mt-4 py-2 rounded-lg text-amber-200 text-sm font-bold active:scale-95">
+                    <i class="fa-solid fa-arrow-left"></i> Main Menu
+                </button>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="overlay-screen hidden">
+            <div class="wood-panel p-6 w-full max-w-sm text-center flex flex-col items-center shadow-2xl">
+                <h2 class="text-xl font-bold text-amber-200 uppercase tracking-wider mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> Settings
+                </h2>
+
+                <div class="w-full space-y-4 mb-6">
+                    <div class="wood-card p-3 rounded-lg flex items-center justify-between">
+                        <span class="font-bold text-sm text-amber-200 flex items-center gap-2">
+                            <i class="fa-solid fa-music"></i> Music & SFX Audio
+                        </span>
+                        <input type="checkbox" id="setting-music" onchange="toggleAudioSetting()" class="w-5 h-5 accent-amber-500 cursor-pointer" checked>
+                    </div>
+                </div>
+
+                <button onclick="closeSettings()" class="wood-card w-full py-2 rounded-lg text-amber-100 font-bold active:scale-95">
+                    <i class="fa-solid fa-check"></i> Save & Close
+                </button>
+            </div>
+        </div>
+
+        <!-- Level Defeat Modal (3 Defeats / 0 Hearts) -->
+        <div id="defeat-modal" class="overlay-screen hidden">
+            <div class="wood-panel p-6 w-full max-w-sm text-center flex flex-col items-center shadow-2xl border-red-700">
+                <i class="fa-solid fa-skull-crossbones text-red-500 text-5xl mb-3 animate-pulse"></i>
+                <h2 class="text-2xl font-black text-red-400 uppercase tracking-widest mb-1">Level Failed!</h2>
+                <p class="text-xs text-amber-200 mb-6">You lost 3 times in this level. You must try this level again!</p>
+                <button onclick="restartCurrentLevel()" class="wood-card w-full py-3 rounded-lg text-amber-100 font-bold hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-left"></i> Level Again
+                </button>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header class="wood-panel p-2 flex justify-between items-center text-xs">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-amber-400 text-base"></i>
+                <span class="font-bold text-amber-200 tracking-wide uppercase">Level <span id="stage-num">1</span></span>
+            </div>
+
+            <div class="flex items-center gap-1 wood-card px-2 py-1 rounded">
+                <span class="text-[10px] font-bold text-amber-300">LIVES:</span>
+                <span id="hearts-container" class="text-xs flex gap-0.5">❤️❤️❤️</span>
+            </div>
+
+            <div class="flex gap-2">
+                <button id="btn-sound" onclick="toggleAudio()" class="wood-card px-3 py-1 rounded text-amber-100 hover:text-white active:scale-95">
+                    <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+                </button>
+                <button onclick="openLevelSelect()" class="wood-card px-3 py-1 rounded text-amber-100 hover:text-white active:scale-95">
+                    <i class="fa-solid fa-list"></i>
+                </button>
+                <button onclick="openMenu()" class="wood-card px-3 py-1 rounded text-amber-100 hover:text-white active:scale-95">
+                    <i class="fa-solid fa-house"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Player Cards Row -->
+        <div class="grid grid-cols-2 gap-2 my-1">
+            <!-- Left Player Card (X) -->
+            <div id="player-x-card" class="wood-panel p-2 relative flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold text-xs text-amber-200 truncate">Hero (X)</span>
+                    <i class="fa-solid fa-user-shield text-amber-300 text-xs"></i>
+                </div>
+                <div class="hp-bar-bg w-full my-1">
+                    <div id="player-hp" class="hp-bar-fill bg-emerald-500" style="width: 100%;"></div>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-amber-300">
+                    <span id="player-hp-text">100 / 100 HP</span>
+                    <!-- EXCLUSIVE PLAYER X COIN COUNTER -->
+                    <div class="coin-badge flex items-center gap-1">
+                        <i class="fa-solid fa-coins text-amber-400 text-[10px]"></i>
+                        <span id="player-x-coins" class="font-extrabold text-amber-300">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Boss Card (O) -->
+            <div id="boss-o-card" class="wood-panel p-2 relative flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span id="boss-name" class="font-bold text-xs text-red-400 truncate">Wood Golem (O)</span>
+                    <i id="boss-icon" class="fa-solid fa-dragon text-red-400 text-xs"></i>
+                </div>
+                <div class="hp-bar-bg w-full my-1">
+                    <div id="boss-hp" class="hp-bar-fill bg-red-600" style="width: 100%;"></div>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-red-300">
+                    <span id="boss-hp-text">100 / 100 HP</span>
+                    <!-- EXCLUSIVE BOSS O COIN COUNTER -->
+                    <div class="coin-badge flex items-center gap-1 border-red-500/50">
+                        <i class="fa-solid fa-coins text-amber-400 text-[10px]"></i>
+                        <span id="boss-o-coins" class="font-extrabold text-amber-300">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Message Banner -->
+        <div id="status-msg" class="wood-card py-1.5 px-3 text-center text-xs font-semibold text-amber-200 truncate shadow">
+            Tap a square to strike!
+        </div>
+
+        <!-- Game Board Container -->
+        <div class="wood-panel p-2 my-auto flex items-center justify-center">
+            <div class="board-wrapper">
+                <canvas id="win-line-canvas"></canvas>
+                <div class="board-grid" id="board">
+                    <div class="cell" onclick="makeMove(0)" id="cell-0"></div>
+                    <div class="cell" onclick="makeMove(1)" id="cell-1"></div>
+                    <div class="cell" onclick="makeMove(2)" id="cell-2"></div>
+                    <div class="cell" onclick="makeMove(3)" id="cell-3"></div>
+                    <div class="cell" onclick="makeMove(4)" id="cell-4"></div>
+                    <div class="cell" onclick="makeMove(5)" id="cell-5"></div>
+                    <div class="cell" onclick="makeMove(6)" id="cell-6"></div>
+                    <div class="cell" onclick="makeMove(7)" id="cell-7"></div>
+                    <div class="cell" onclick="makeMove(8)" id="cell-8"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Controls -->
+        <footer class="wood-panel p-2 flex justify-around items-center gap-2">
+            <button onclick="useSpecialSkill('heal')" class="wood-card flex-1 py-2 rounded flex flex-col items-center justify-center text-emerald-300 hover:text-emerald-100 active:scale-95">
+                <i class="fa-solid fa-heart-pulse text-base"></i>
+                <span class="text-[10px] font-bold mt-0.5">Heal (+30 HP)</span>
+            </button>
+            <button onclick="useSpecialSkill('fireball')" class="wood-card flex-1 py-2 rounded flex flex-col items-center justify-center text-amber-400 hover:text-amber-200 active:scale-95">
+                <i class="fa-solid fa-fire text-base"></i>
+                <span class="text-[10px] font-bold mt-0.5">Fireball (25 DMG)</span>
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        let board = ["", "", "", "", "", "", "", "", ""];
+        let playerHP = 100;
+        let maxPlayerHP = 100;
+        let bossHP = 100;
+        let maxBossHP = 100;
+        let stage = 1;
+        let lives = 3; // 3 Hearts per level
+        let isPlayerTurn = true;
+        let soundEnabled = true;
+        let audioCtx = null;
+        let bgmTimer = null;
+        let bgmNoteIndex = 0;
+
+        let playerXCoins = parseInt(localStorage.getItem('ttt_player_x_coins') || '0', 10);
+        let bossOCoins = parseInt(localStorage.getItem('ttt_boss_o_coins') || '0', 10);
+
+        const bosses = [
+            { id: 1, name: "Casual Golem", hp: 100, icon: "fa-tree", attack: 15, difficulty: "easy" },
+            { id: 2, name: "Tuff Orc", hp: 140, icon: "fa-user-ninja", attack: 22, difficulty: "tuff" },
+            { id: 3, name: "Pro Treant", hp: 180, icon: "fa-spaghetti-monster-flying", attack: 30, difficulty: "pro" },
+            { id: 4, name: "Master Dragon", hp: 250, icon: "fa-dragon", attack: 40, difficulty: "master" }
+        ];
+
+        const winningCombinations = [
+            [0,1,2], [3,4,5], [6,7,8],
+            [0,3,6], [1,4,7], [2,5,8],
+            [0,4,8], [2,4,6]
+        ];
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) audioCtx = new AudioContextClass();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function startBGM() {
+            if (!soundEnabled) return;
+            initAudioContext();
+            stopBGM();
+
+            const scale = [220, 261.63, 293.66, 329.63, 392.00, 440, 523.25];
+            bgmNoteIndex = 0;
+
+            bgmTimer = setInterval(() => {
+                if (!soundEnabled || !audioCtx) return;
+                try {
+                    const now = audioCtx.currentTime;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+
+                    osc.type = 'square';
+                    const freq = scale[bgmNoteIndex % scale.length];
+                    osc.frequency.setValueAtTime(freq, now);
+
+                    gain.gain.setValueAtTime(0.025, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+
+                    bgmNoteIndex++;
+                } catch(e) {}
+            }, 140);
+        }
+
+        function stopBGM() {
+            if (bgmTimer) {
+                clearInterval(bgmTimer);
+                bgmTimer = null;
+            }
+        }
+
+        function playSFX(type) {
+            if (!soundEnabled) return;
+            initAudioContext();
+            if (!audioCtx) return;
+
+            try {
+                const now = audioCtx.currentTime;
+
+                if (type === 'pop') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, now);
+                    osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+
+                } else if (type === 'victory') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+
+                        gain.gain.setValueAtTime(0.2, now + idx * 0.12);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.25);
+
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.12);
+                        osc.stop(now + idx * 0.12 + 0.25);
+                    });
+
+                } else if (type === 'gameover') {
+                    const notes = [400, 350, 300, 220];
+                    notes.forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(freq, now + idx * 0.15);
+
+                        gain.gain.setValueAtTime(0.18, now + idx * 0.15);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.15 + 0.2);
+
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + idx * 0.15);
+                        osc.stop(now + idx * 0.15 + 0.2);
+                    });
+
+                } else if (type === 'hit') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(160, now);
+                    osc.frequency.linearRampToValueAtTime(40, now + 0.18);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.18);
+
+                } else if (type === 'heal') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(350, now);
+                    osc.frequency.exponentialRampToValueAtTime(850, now + 0.22);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.22);
+                }
+            } catch(e) {}
+        }
+
+        function toggleAudio() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('setting-music').checked = soundEnabled;
+            document.getElementById('sound-icon').className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+            if (soundEnabled) startBGM();
+            else stopBGM();
+        }
+
+        function toggleAudioSetting() {
+            soundEnabled = document.getElementById('setting-music').checked;
+            document.getElementById('sound-icon').className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+            if (soundEnabled) startBGM();
+            else stopBGM();
+        }
+
+        function addPlayerCoins(winnerSymbol) {
+            if (winnerSymbol === 'X') {
+                playerXCoins += 5;
+                localStorage.setItem('ttt_player_x_coins', playerXCoins.toString());
+                updateCoinUI();
+                spawnCoinPopupOnCard('player-x-card', '+5 COINS');
+            } else if (winnerSymbol === 'O') {
+                bossOCoins += 5;
+                localStorage.setItem('ttt_boss_o_coins', bossOCoins.toString());
+                updateCoinUI();
+                spawnCoinPopupOnCard('boss-o-card', '+5 COINS');
+            }
+        }
+
+        function updateCoinUI() {
+            document.getElementById('player-x-coins').innerText = playerXCoins;
+            document.getElementById('boss-o-coins').innerText = bossOCoins;
+        }
+
+        function spawnCoinPopupOnCard(cardId, text) {
+            const cardElem = document.getElementById(cardId);
+            if (!cardElem) return;
+
+            const popup = document.createElement('div');
+            popup.className = 'absolute pointer-events-none z-50 flex items-center gap-1 bg-amber-900/90 border border-amber-400 text-amber-200 px-2 py-0.5 rounded-full font-black text-[11px] shadow-lg';
+            popup.style.top = '-10px';
+            popup.style.left = '50%';
+            popup.style.transform = 'translateX(-50%)';
+            popup.innerHTML = `<i class="fa-solid fa-coins text-amber-400"></i> ${text}`;
+
+            cardElem.appendChild(popup);
+
+            setTimeout(() => {
+                popup.style.transition = 'all 0.8s ease-out';
+                popup.style.top = '-30px';
+                popup.style.opacity = '0';
+            }, 50);
+
+            setTimeout(() => {
+                if (popup.parentNode) popup.parentNode.removeChild(popup);
+            }, 900);
+        }
+
+        function handleStartGame(isNew) {
+            initAudioContext();
+            startBGM();
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('settings-screen').classList.add('hidden');
+
+            if (isNew) {
+                stage = 1;
+                playerXCoins = 0;
+                bossOCoins = 0;
+                localStorage.setItem('ttt_player_x_coins', '0');
+                localStorage.setItem('ttt_boss_o_coins', '0');
+                updateCoinUI();
+            }
+            openLevelSelect();
+        }
+
+        function openLevelSelect() {
+            const container = document.getElementById('level-buttons-container');
+            container.innerHTML = '';
+
+            bosses.forEach((b) => {
+                const btn = document.createElement('button');
+                btn.className = 'wood-card w-full py-2.5 px-4 rounded-lg text-amber-100 font-bold flex items-center justify-between hover:brightness-110 active:scale-95 transition';
+                btn.innerHTML = `
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid ${b.icon} text-amber-400"></i> Level ${b.id}: ${b.name}
+                    </span>
+                    <span class="text-xs text-amber-300 font-semibold">${b.hp} HP</span>
+                `;
+                btn.onclick = () => selectLevel(b.id);
+                container.appendChild(btn);
+            });
+
+            document.getElementById('level-screen').classList.remove('hidden');
+        }
+
+        function selectLevel(levelId) {
+            stage = levelId;
+            lives = 3; // Reset to 3 lives when starting or choosing a level
+            document.getElementById('level-screen').classList.add('hidden');
+            document.getElementById('defeat-modal').classList.add('hidden');
+            startStage(stage);
+        }
+
+        function startStage(stageNum) {
+            const currentBoss = bosses[Math.min(stageNum - 1, bosses.length - 1)];
+            bossHP = currentBoss.hp;
+            maxBossHP = currentBoss.hp;
+            playerHP = maxPlayerHP;
+            isPlayerTurn = true;
+
+            resetBoardOnly();
+            renderHP();
+            updateHeartsUI();
+            updateUI(`Stage ${stageNum}: ${currentBoss.name} appeared! Your turn.`);
+        }
+
+        function updateHeartsUI() {
+            let heartsStr = "";
+            for (let i = 0; i < 3; i++) {
+                heartsStr += (i < lives) ? "❤️" : "🖤";
+            }
+            document.getElementById('hearts-container').innerText = heartsStr;
+        }
+
+        function openMenu() {
+            document.getElementById('start-screen').classList.remove('hidden');
+            document.getElementById('level-screen').classList.add('hidden');
+            document.getElementById('settings-screen').classList.add('hidden');
+            document.getElementById('defeat-modal').classList.add('hidden');
+        }
+
+        function openSettings() {
+            document.getElementById('settings-screen').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-screen').classList.add('hidden');
+        }
+
+        function drawWinningLine(combo, color) {
+            const canvas = document.getElementById('win-line-canvas');
+            const boardGrid = document.getElementById('board');
+            if (!canvas || !boardGrid) return;
+            const ctx = canvas.getContext('2d');
+
+            const rect = boardGrid.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            const firstCell = document.getElementById(`cell-${combo[0]}`);
+            const lastCell = document.getElementById(`cell-${combo[2]}`);
+            if (!firstCell || !lastCell) return;
+
+            const cellRect1 = firstCell.getBoundingClientRect();
+            const cellRect2 = lastCell.getBoundingClientRect();
+
+            const startX = (cellRect1.left + cellRect1.width / 2) - rect.left;
+            const startY = (cellRect1.top + cellRect1.height / 2) - rect.top;
+            const endX = (cellRect2.left + cellRect2.width / 2) - rect.left;
+            const endY = (cellRect2.top + cellRect2.height / 2) - rect.top;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let progress = 0;
+            function animateLine() {
+                if (progress <= 1) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    const currentX = startX + (endX - startX) * progress;
+                    const currentY = startY + (endY - startY) * progress;
+                    ctx.lineTo(currentX, currentY);
+
+                    ctx.lineWidth = 8;
+                    ctx.lineCap = 'round';
+                    ctx.strokeStyle = color;
+                    ctx.shadowColor = color;
+                    ctx.shadowBlur = 12;
+                    ctx.stroke();
+
+                    progress += 0.1;
+                    requestAnimationFrame(animateLine);
+                }
+            }
+            animateLine();
+        }
+
+        function clearWinningLine() {
+            const canvas = document.getElementById('win-line-canvas');
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function makeMove(index) {
+            if (board[index] !== "" || !isPlayerTurn || bossHP <= 0 || playerHP <= 0) return;
+
+            playSFX('pop');
+            board[index] = "X";
+            renderBoard();
+
+            const winCombo = checkWinCombo("X");
+            if (winCombo) {
+                drawWinningLine(winCombo, '#f59e0b');
+                let dmg = 40;
+                bossHP = Math.max(0, bossHP - dmg);
+
+                addPlayerCoins('X');
+                updateUI(`Critical Combo! Dealt ${dmg} DMG! (+5 Coins)`);
+                playSFX('hit');
+
+                if (bossHP <= 0) {
+                    playSFX('victory');
+                    setTimeout(() => nextStage(), 1200);
+                } else {
+                    setTimeout(() => resetBoardOnly(), 1000);
+                }
+            } else if (board.every(cell => cell !== "")) {
+                updateUI("Draw turn! Board reset.");
+                setTimeout(() => resetBoardOnly(), 800);
+            } else {
+                isPlayerTurn = false;
+                updateUI("Boss is thinking...");
+                setTimeout(bossTurn, 600);
+            }
+        }
+
+        function bossTurn() {
+            if (bossHP <= 0) return;
+
+            let emptyIndices = board.map((v, i) => v === "" ? i : null).filter(v => v !== null);
+            if (emptyIndices.length === 0) return;
+
+            let choice = -1;
+            const currentBoss = bosses[Math.min(stage - 1, bosses.length - 1)];
+
+            if (currentBoss.difficulty === "easy") {
+                // Casual AI: 80% Random Move
+                choice = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+            } else {
+                // TUFF / PRO / MASTER AI: Active Blocking and Winning logic
+                // 1. Can Boss Win Immediately?
+                for (let idx of emptyIndices) {
+                    board[idx] = "O";
+                    if (checkWinCombo("O")) {
+                        choice = idx;
+                        board[idx] = "";
+                        break;
+                    }
+                    board[idx] = "";
+                }
+
+                // 2. Must Block Player's Immediate Win?
+                if (choice === -1) {
+                    for (let idx of emptyIndices) {
+                        board[idx] = "X";
+                        if (checkWinCombo("X")) {
+                            choice = idx;
+                            board[idx] = "";
+                            break;
+                        }
+                        board[idx] = "";
+                    }
+                }
+
+                // 3. Strategic Corner / Center Choice
+                if (choice === -1 && currentBoss.difficulty !== "easy") {
+                    if (board[4] === "") choice = 4; // Prefer center
+                }
+
+                // 4. Fallback to random move
+                if (choice === -1) {
+                    choice = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+                }
+            }
+
+            board[choice] = "O";
+            playSFX('pop');
+            renderBoard();
+
+            const winCombo = checkWinCombo("O");
+            if (winCombo) {
+                drawWinningLine(winCombo, '#ef4444');
+                let boss = bosses[Math.min(stage - 1, bosses.length - 1)];
+                let dmg = Math.floor(boss.attack * 1.5);
+                playerHP = Math.max(0, playerHP - dmg);
+
+                addPlayerCoins('O');
+                playSFX('hit');
+
+                // Lose 1 Life / Heart on match defeat
+                lives--;
+                updateHeartsUI();
+
+                if (lives <= 0) {
+                    playSFX('gameover');
+                    updateUI(`Level Failed! 0 Lives Left.`);
+                    setTimeout(() => showDefeatModal(), 1000);
+                } else {
+                    updateUI(`Boss combo! Dealt ${dmg} DMG! (${lives} Lives Left)`);
+                    setTimeout(() => resetBoardOnly(), 1000);
+                }
+            } else if (board.every(cell => cell !== "")) {
+                updateUI("Draw turn! Board reset.");
+                setTimeout(() => resetBoardOnly(), 800);
+            } else {
+                updateUI("Your turn!");
+            }
+            isPlayerTurn = true;
+        }
+
+        function showDefeatModal() {
+            document.getElementById('defeat-modal').classList.remove('hidden');
+        }
+
+        function restartCurrentLevel() {
+            lives = 3;
+            document.getElementById('defeat-modal').classList.add('hidden');
+            startStage(stage);
+        }
+
+        function useSpecialSkill(skill) {
+            if (!isPlayerTurn || playerHP <= 0 || bossHP <= 0) return;
+
+            if (skill === 'heal') {
+                playerHP = Math.min(maxPlayerHP, playerHP + 30);
+                playSFX('heal');
+                updateUI("Healed 30 HP!");
+            } else if (skill === 'fireball') {
+                bossHP = Math.max(0, bossHP - 25);
+                playSFX('hit');
+                updateUI("Fireball dealt 25 DMG!");
+                if (bossHP <= 0) {
+                    playSFX('victory');
+                    addPlayerCoins('X');
+                    setTimeout(() => nextStage(), 1000);
+                    return;
+                }
+            }
+
+            renderHP();
+            isPlayerTurn = false;
+            setTimeout(bossTurn, 600);
+        }
+
+        function checkWinCombo(symbol) {
+            for (let combo of winningCombinations) {
+                if (combo.every(i => board[i] === symbol)) return combo;
+            }
+            return null;
+        }
+
+        function resetBoardOnly() {
+            clearWinningLine();
+            board = ["", "", "", "", "", "", "", "", ""];
+            renderBoard();
+        }
+
+        function nextStage() {
+            if (stage < bosses.length) {
+                stage++;
+                lives = 3; // Restore all 3 lives for next level
+                startStage(stage);
+            } else {
+                updateUI("VICTORY! You cleared all levels!");
+                playSFX('victory');
+                setTimeout(() => openLevelSelect(), 2000);
+            }
+        }
+
+        function renderBoard() {
+            board.forEach((val, i) => {
+                const cell = document.getElementById(`cell-${i}`);
+                if (cell) {
+                    cell.innerText = val;
+                    cell.className = "cell " + (val === "X" ? "mark-x" : (val === "O" ? "mark-o" : ""));
+                }
+            });
+        }
+
+        function renderHP() {
+            const currentBoss = bosses[Math.min(stage - 1, bosses.length - 1)];
+            document.getElementById('stage-num').innerText = stage;
+            document.getElementById('boss-name').innerText = `${currentBoss.name} (O)`;
+            document.getElementById('boss-icon').className = `fa-solid ${currentBoss.icon} text-red-400 text-xs`;
+
+            document.getElementById('player-hp').style.width = `${(playerHP / maxPlayerHP) * 100}%`;
+            document.getElementById('player-hp-text').innerText = `${Math.ceil(playerHP)} / ${maxPlayerHP} HP`;
+
+            document.getElementById('boss-hp').style.width = `${(bossHP / maxBossHP) * 100}%`;
+            document.getElementById('boss-hp-text').innerText = `${Math.ceil(bossHP)} / ${maxBossHP} HP`;
+        }
+
+        function updateUI(msg) {
+            document.getElementById('status-msg').innerText = msg;
+            renderHP();
+        }
+
+        window.onresize = function() {
+            clearWinningLine();
+        };
+
+        window.onload = function() {
+            updateCoinUI();
+            updateHeartsUI();
+            renderHP();
+            renderBoard();
+        };
+    </script>
+</body>
+</html>
